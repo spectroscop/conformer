@@ -25,20 +25,21 @@ This is a modified code of  https://github.com/iwatobipen/rdk_confgen.git (https
  - Then run conformer command (with deafault settings) 
 
  ```
- $ conformer -i ./sample/ligand.mol -o ./sample
+ $ python conformer.py -i ./sample/ligand.mol -o ./sample
 ## UFF
- $ conformer -i ./sample/ligand.mol -o ./sample -f UFF
+ $ python conformer.py -i ./sample/ligand.mol -o ./sample -f UFF
 ## tautomer 
- $ conformer -i ./sample/ligand.mol -o ./sample -t true
+ $ python conformer.py -i ./sample/ligand.mol -o ./sample -t true
+## stereomer 
+ $ python conformer.py -i ./sample/ligand.mol -o ./sample/ -s true 
 ## RMSD
- $ conformer -i ./sample/ligand.mol -o ./sample -r 0.9
+ $ python conformer.py -i ./sample/ligand.mol -o ./sample -r 0.9
 ## macrocycle
- $ conformer -i ./sample/ligand.mol -o ./sample -c 30
+ $ python conformer.py -i ./sample/ligand.mol -o ./sample -c 30
 ## number of conformers per structure
- $ conformer -i ./sample/ligand.mol -o ./sample -m true
+ $ python conformer.py -i ./sample/ligand.mol -o ./sample -m true
 ## not write FF energy
- $ conformer -i ./sample/ligand.mol -o ./sample -a false
- 
+ $ python conformer.py -i ./sample/ligand.mol -o ./sample -a false
  ``` 
 
 ## Useful informations

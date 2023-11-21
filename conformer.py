@@ -11,6 +11,8 @@ from rdkit.Chem import rdMolAlign
 from rdkit.Chem import rdMolTransforms
 from rdkit.Chem import rdDepictor
 from rdkit.Chem.MolStandardize import rdMolStandardize
+from rdkit.Chem import EnumerateStereoisomers
+
 rdDepictor.SetPreferCoordGen(True)
 #import rdkit
 #print(rdkit.__version__)
@@ -24,6 +26,7 @@ class Settings:
     ConfLimit    = 99    # Max numbers of conformers allowed per structure for DFT stages
     add_ref      = True
     tautomer     = False # generate tautomer
+    stereomer    = False # generate stereomer
     macrocycle   = False # molecule into macrocycle
     verbose      = False # verbose for check generator conformer
     ff           = 'MMFF94s' # verbose for check generator conformer
@@ -91,7 +94,9 @@ def MMFFOptimizeMolecule (settings, mol):
 
 #    metric_etkd = []
 #    t1 = time.time()
+#    print (mol)
     mol = Chem.AddHs (mol, addCoords=True)
+    
     conf = rdDistGeom.EmbedMultipleConfs (mol, settings.ConfLimit, param_etkdg)
 #    t2 = time.time()
     if settings.verbose:
@@ -244,6 +249,19 @@ adjustHs: adds explicit Hs where necessary to preserve the chemistry. This is ty
         print ('Generate ' + str (len(Isomers.Molecules)) + ' tautomers.' )
     else:
         Isomers.Molecules = [uncharged_mol]
+
+    if settings.stereomer:
+        param_stereogen = EnumerateStereoisomers.StereoEnumerationOptions()
+        #param_stereogen.onlyStereoGroups = True
+        param_stereogen.tryEmbedding = True
+        param_stereogen.unique=True
+        stereomol = []
+        for i_ in range(0, len(Isomers.Molecules)):
+            stereo = tuple(EnumerateStereoisomers.EnumerateStereoisomers(Isomers.Molecules[i_], options=param_stereogen))
+            stereomol = stereomol + (list(stereo))
+        Isomers.Molecules = stereomol
+        #Isomers.Molecules = [Chem.rdMolInterchange.JSONToMols(Chem.rdMolInterchange.MolToJSON(i_))[0] for i_ in stereomol]
+        print ('Generate ' + str (len(Isomers.Molecules)) + ' stereomers.' )
     
     for i_ in range(0, len(Isomers.Molecules)):
         mol, conformers, MMEnergies = MMFFOptimizeMolecule (settings, Isomers.Molecules[i_])
@@ -260,15 +278,16 @@ def run():
 
     # These are then overridden by any explicit parameters given through the command line
     parser = argparse.ArgumentParser(description='generate conformer')
-    parser.add_argument('-i', '--InputFile', help="inputfile MOL")
+    parser.add_argument('-i', '--InputFile',    help="inputfile MOL")
     parser.add_argument('-o', '--OutputFolder', help="Directory for output conforme name-cinformer.sdf", default=settings.OutputFolder)
-    parser.add_argument('-r', "--RMSDcutoff", help='Retain conformations, default - 0.3', type=float, default=settings.RMSDcutoff)
-    parser.add_argument('-c', "--ConfLimit", help="Specify maximum number of conformers per structure, default - 99", type=int)
-    parser.add_argument('-a', "--add_ref", help='Write calck energy force field, default - true', type=bool, default=True)
-    parser.add_argument('-m', "--macrocycle", help='Use the macrocycle torsions from ETKDGv3, default - false', type=bool, default=False)
-    parser.add_argument("-t", "--tautomer", help='Generate tautomer', type=bool, default=False)
-    parser.add_argument("-f", "--forcefield", help='force field MMFF94s (default), MMFF94 or UFF for metaloorganic', default=settings.ff)
-    parser.add_argument("-v", "--verbose", type=bool, default=False)
+    parser.add_argument('-r', "--RMSDcutoff",   help='Retain conformations, default - 0.3', type=float, default=settings.RMSDcutoff)
+    parser.add_argument('-c', "--ConfLimit",    help="Specify maximum number of conformers per structure, default - 99", type=int)
+    parser.add_argument('-a', "--add_ref",      help='Write calck energy force field, default - true', type=bool, default=True)
+    parser.add_argument('-m', "--macrocycle",   help='Use the macrocycle torsions from ETKDGv3, default - false', type=bool, default=False)
+    parser.add_argument("-t", "--tautomer",     help='Generate tautomer', type=bool, default=False)
+    parser.add_argument("-s", "--stereomer",    help='Generate stereomer', type=bool, default=False)
+    parser.add_argument("-f", "--forcefield",   help='force field MMFF94s (default), MMFF94 or UFF for metaloorganic', default=settings.ff)
+    parser.add_argument("-v", "--verbose",      type=bool, default=False)
 
     args = parser.parse_args()
  
@@ -310,8 +329,9 @@ def run():
         else:
             settings.ConfLimit = args.ConfLimit
     settings.add_ref    = args.add_ref
-    settings.macrocycle = args.macrocycle
     settings.tautomer   = args.tautomer
+    settings.stereomer  = args.stereomer
+    settings.macrocycle = args.macrocycle
     if args.forcefield:
         if args.forcefield == 'MMFF94s':
             settings.ff = 'MMFF94s'
